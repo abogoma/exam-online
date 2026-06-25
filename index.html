@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نظام الاختبار الأونلاين - القواعد النحوية</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Tajawal',sans-serif}
+body{background:linear-gradient(135deg,#e0f2fe 0%,#bae6fd 50%,#7dd3fc 100%);min-height:100vh;padding:20px;font-size:20px}
+.container{max-width:1400px;margin:0 auto}
+.card{background:#fff;border-radius:20px;padding:40px;box-shadow:0 10px 40px rgba(0,0,0,.1);margin-bottom:20px}
+.header{text-align:center;color:#0369a1;margin-bottom:30px}
+.header h1{font-size:42px;margin-bottom:15px;font-weight:900}
+.header p{font-size:24px;color:#475569}
+.alert{background:#fef3c7;border-right:5px solid #f59e0b;padding:20px;border-radius:12px;margin:20px 0;color:#92400e;font-size:21px;line-height:2}
+.alert-danger{background:#fee2e2;border-right-color:#dc2626;color:#991b1b}
+.alert-success{background:#d1fae5;border-right-color:#16a34a;color:#065f46}
+.question-box{margin:35px 0}
+.question-text{font-size:28px;color:#1e293b;margin-bottom:30px;font-weight:700;line-height:2.2}
+.option{background:#f1f5f9;border:3px solid #cbd5e1;padding:22px;border-radius:15px;margin:18px 0;cursor:pointer;transition:.3s;font-size:24px;line-height:2}
+.option:hover{background:#e0f2fe;border-color:#38bdf8;transform:translateX(-8px)}
+.option.selected{background:#dbeafe;border-color:#3b82f6;font-weight:700;box-shadow:0 4px 12px rgba(59,130,246,.3)}
+.btn{background:#0ea5e9;color:#fff;border:none;padding:18px 45px;border-radius:12px;font-size:22px;cursor:pointer;margin:5px;font-weight:700;transition:.3s}
+.btn:hover{background:#0284c7;transform:translateY(-3px);box-shadow:0 6px 20px rgba(14,165,233,.4)}
+.btn:disabled{background:#94a3b8;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-warning{background:#f59e0b}
+.btn-danger{background:#dc2626}
+.btn-success{background:#16a34a}
+.btn-sm{padding:12px 25px;font-size:18px}
+.progress{height:14px;background:#e2e8f0;border-radius:10px;margin:30px 0;overflow:hidden}
+.progress-bar{height:100%;background:linear-gradient(90deg,#0ea5e9,#38bdf8);border-radius:10px;transition:.5s}
+.hidden{display:none!important}
+.report-table{width:100%;border-collapse:collapse;margin:25px 0;font-size:18px}
+.report-table th,.report-table td{border:2px solid #cbd5e1;padding:14px;text-align:right;line-height:1.8}
+.report-table th{background:#0ea5e9;color:#fff;font-size:19px;position:sticky;top:0}
+.report-table tr:nth-child(even){background:#f8fafc}
+.report-table tr:hover{background:#e0f2fe}
+.correct{color:#16a34a;font-weight:700;font-size:20px}
+.wrong{color:#dc2626;font-weight:700;font-size:20px}
+.badge{display:inline-block;padding:6px 14px;border-radius:20px;font-size:15px;font-weight:700}
+.badge-blocked{background:#fee2e2;color:#dc2626}
+.badge-active{background:#d1fae5;color:#16a34a}
+.badge-idle{background:#fef3c7;color:#92400e}
+.badge-online{background:#3b82f6;color:#fff;animation:pulse 2s infinite}
+.timer{background:#1e293b;color:#fff;padding:14px 30px;border-radius:50px;display:inline-block;font-size:26px;font-weight:700;margin:10px 0}
+.timer.warning{background:#dc2626;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.input-group{margin:30px 0}
+.input-group label{display:block;margin-bottom:12px;font-weight:700;color:#334155;font-size:21px}
+.input-group input{width:100%;padding:18px;border:3px solid #cbd5e1;border-radius:12px;font-size:22px}
+.input-group input:focus{outline:none;border-color:#0ea5e9}
+.question-nav{display:flex;gap:12px;flex-wrap:wrap;margin:30px 0;justify-content:center}
+.q-nav-btn{width:55px;height:55px;border-radius:50%;border:3px solid #cbd5e1;background:#fff;cursor:pointer;font-weight:700;transition:.3s;font-size:20px}
+.q-nav-btn.answered{background:#dbeafe;border-color:#3b82f6}
+.q-nav-btn.postponed{background:#fef3c7;border-color:#f59e0b}
+.q-nav-btn.current{background:#0ea5e9;color:#fff;border-color:#0ea5e9;transform:scale(1.15)}
+.certificate{background:linear-gradient(135deg,#fef3c7 0%,#fde68a 50%,#fcd34d 100%);border:10px solid #d97706;padding:70px;border-radius:25px;text-align:center;position:relative;margin:30px 0}
+.certificate::before{content:'🏆';font-size:100px;position:absolute;top:25px;right:25px}
+.certificate::after{content:'⭐';font-size:100px;position:absolute;bottom:25px;left:25px}
+.certificate h2{font-size:50px;color:#92400e;margin:25px 0;font-weight:900}
+.certificate h3{font-size:40px;color:#1e293b;margin:18px 0}
+.certificate p{font-size:25px;color:#334155;margin:12px 0;line-height:2.2}
+.certificate.score{font-size:80px;color:#059669;font-weight:900;margin:25px 0}
+.motivation{background:#fff;padding:30px;border-radius:18px;margin:25px 0;border-right:6px solid #16a34a;font-size:23px;color:#065f46;line-height:2.2}
+.checkbox-cell{text-align:center}
+.checkbox-cell input[type="checkbox"]{width:22px;height:22px;cursor:pointer}
+.toolbar{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin:20px 0;padding:25px;background:#f8fafc;border-radius:12px}
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:9999}
+.modal-content{background:#fff;padding:40px;border-radius:20px;max-width:500px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-content h2{color:#0369a1;margin-bottom:20px;font-size:30px}
+.modal-content input[type="password"]{width:100%;padding:18px;border:3px solid #cbd5e1;border-radius:12px;font-size:22px;margin:15px 0}
+.notification-badge{background:#dc2626;color:#fff;padding:4px 10px;border-radius:50%;font-size:16px;font-weight:700;margin-right:8px}
+.live-indicator{display:inline-block;width:12px;height:12px;background:#16a34a;border-radius:50%;margin-left:8px;animation:pulse 2s infinite}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin:25px 0}
+.stat-card{background:linear-gradient(135deg,#0ea5e9,#38bdf8);color:#fff;padding:25px;border-radius:15px;text-align:center}
+.stat-card h3{font-size:48px;margin:10px 0}
+.stat-card p{font-size:18px;opacity:.9}
+.table-wrapper{max-height:600px;overflow:auto}
+@media print{body{background:#fff}.btn,.timer,.question-nav,.toolbar{display:none!important}.card{box-shadow:none;page-break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="card" id="loginScreen">
+<div class="header"><h1>📘 اختبارُ القواعِدِ النَّحْوِيَّةِ <span class="live-indicator"></span></h1><p>مُراجَعَةٌ شامِلَةٌ أونلاين - 30 سُؤَالاً</p></div>
+<div class="alert alert-success">🌐 <strong>النظام متصل بالإنترنت:</strong> يمكن لأي عدد من الطلاب الدخول بنفس الوقت. النتائج تظهر للمعلم فوراً.</div>
+<div id="blockAlert" class="alert alert-danger hidden"></div>
+<div id="resumeAlert" class="alert alert-success hidden">✅ <strong>تم العثور على اختبار غير مكتمل!</strong> يمكنك المتابعة من حيث توقفت.</div>
+<div class="input-group"><label>اِسْمُ الطَّالِبِ الثُّلاثِيُّ:</label><input type="text" id="studentName" placeholder="اُكْتُبِ اسْمَكَ كامِلاً"></div>
+<button class="btn" onclick="startQuiz()">اِبْدَأِ الاِخْتِبارَ</button>
+<button class="btn btn-success" onclick="showTeacherLogin()">دُخُولُ المُعَلِّمِ</button>
+</div>
+
+<div class="card hidden" id="teacherSetupScreen">
+<div class="header"><h1>⚙️ إِعْداداتُ الاِخْتِبارِ <span class="live-indicator"></span></h1></div>
+<div class="input-group"><label>مُدَّةُ الاِخْتِبارِ بِالدَّقائِقِ:</label><input type="number" id="examDuration" value="30" min="5" max="120"><small style="color:#64748b;font-size:18px;">0 = بِدُونِ مُؤَقِّتٍ</small></div>
+<div class="input-group"><label>مُدَّةُ الخُمُولِ قَبْلَ الطَّرْدِ التِّلْقائِيِّ (بالثَّوانِي):</label><input type="number" id="idleTimeout" value="300" min="30" max="1800"><small style="color:#64748b;font-size:18px;">300 ثانية = 5 دقائق. 0 = تعطيل الطرد التلقائي</small></div>
+<button class="btn btn-success" onclick="saveSettings()">حِفْظُ الإِعْداداتِ</button>
+<button class="btn" onclick="showTeacherView()">عَرْضُ تَقارِيرِ الطُّلَّابِ <span id="requestBadge"></span></button>
+<button class="btn" onclick="backToLogin()">رُجُوعٌ</button>
+</div>
+
+<div class="card hidden" id="quizScreen">
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;"><div class="timer" id="timerDisplay">⏱️ --:--</div><div style="font-weight:600;color:#334155;font-size:21px;">الطَّالِبُ: <span id="currentStudent"></span> <span class="live-indicator"></span></div></div>
+<div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+<div class="question-nav" id="questionNav"></div>
+<div id="questionContainer"></div>
+<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:25px;"><button class="btn" id="prevBtn" onclick="prevQuestion()">◀ السَّابِقُ</button><button class="btn btn-warning" onclick="postponeQuestion()">تَأْجِيلُ السُّؤَالِ</button><button class="btn" id="nextBtn" onclick="nextQuestion()" disabled>التَّالِي ▶</button><button class="btn btn-danger" onclick="finishQuizEarly()">إِنْهاءُ الاِخْتِبارِ</button></div>
+</div>
+
+<div class="card hidden" id="resultScreen">
+<div id="certificateContainer"></div>
+<div id="finalReport"></div>
+<div style="text-align:center;margin-top:25px;"><button class="btn" onclick="window.print()">🖨️ طِباعَةُ الشَّهادَةِ وَالتَّقْرِيرِ</button><button class="btn" onclick="location.reload()">اِخْتِبارُ طالِبٍ جَدِيدٍ</button></div>
+</div>
+
+<div class="card hidden" id="teacherScreen">
+<div class="header"><h1>📊 لَوْحَةُ المُعَلِّمِ - مباشر <span class="live-indicator"></span></h1></div>
+<div class="stats-grid" id="statsGrid"></div>
+<div id="reentryRequestsContainer"></div>
+<div class="toolbar">
+<button class="btn btn-danger" onclick="deleteSelected()">🗑️ حَذْفُ المُحَدَّدِ</button>
+<button class="btn" onclick="selectAll()">☑️ تَحْدِيدُ الكُلِّ</button>
+<button class="btn" onclick="deselectAll()">☐ إِلْغاءُ التَّحْدِيدِ</button>
+<button class="btn btn-warning" onclick="unblockSelected()">🔓 إلْغاءُ حَظْرِ المُحَدَّدِ</button>
+<button class="btn" onclick="exportToExcel()">📥 تَصْدِيرُ Excel</button>
+<button class="btn btn-success" onclick="refreshData()">🔄 تحديث</button>
+</div>
+<div class="table-wrapper"><div id="allReports"></div></div>
+<div style="text-align:center;margin-top:25px;"><button class="btn btn-danger" onclick="clearAllData()">مَسْحُ كُلِّ البَياناتِ</button><button class="btn" onclick="backToLogin()">خُرُوجٌ</button></div>
+</div>
+
+<div class="card hidden" id="studentDetailScreen">
+<div class="header"><h1 id="detailStudentName"></h1></div>
+<div id="studentDetailReport"></div>
+<button class="btn" onclick="backToTeacher()">◀ رُجُوعٌ لِلتَّقارِيرِ</button>
+<button class="btn" onclick="window.print()">🖨️ طِباعَةٌ</button>
+</div>
+
+<div id="passwordModal" class="modal hidden">
+<div class="modal-content">
+<h2>🔐 دُخُولُ المُعَلِّمِ</h2>
+<p style="font-size:20px;margin:15px 0;">أَدْخِلْ كَلِمَةَ المُرُورِ:</p>
+<input type="password" id="teacherPassword" placeholder="كلمة المرور">
+<div style="text-align:center;margin-top:20px;">
+<button class="btn btn-success" onclick="checkTeacherPassword()">دُخُولٌ</button>
+<button class="btn" onclick="closePasswordModal()">إِلْغاءٌ</button>
+</div>
+</div>
+</div>
+<script>
+// FIREBASE_CONFIG_HERE
+const firebaseConfig = {
+  apiKey: "AIzaSyAmSAB5Jq5Qo_c_8q7CveC2pEHBnZbVkDY",
+  authDomain: "exzam1-7b136.firebaseapp.com",
+  projectId: "exzam1-7b136",
+  storageBucket: "exzam1-7b136.firebasestorage.app",
+  messagingSenderId: "67694765155",
+  appId: "1:67694765155:web:9e040a029b6475275bc456"
+
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const questions=[
+{q:"الوَقْتُ.......... الثَّرْوَةَ.",options:["يُضَيِّعُ","ثَمِينٌ","يُنَظِّمُ","كَالذَّهَبِ"],answer:0,explain:"الفِعْلُ المُناسِبُ: الوَقْتُ يُضَيِّعُ الثَّرْوَةَ"},
+{q:"يَصِلُ إِلَى المَعالِي.......... يَجْتَهِدُ.",options:["الَّذِي","مَنْ","ما","مَتَى"],answer:1,explain:"«مَنْ» اِسْمُ شَرْطٍ جازِمٌ لِلْعاقِلِ"},
+{q:"مِنَ الإِفْراطِ فِي اسْتِخْدامِ الإِنْتَرْنِتِ..........",options:["فَوائِدُ","تَضْيِيعُ الوَقْتِ","العِلْمُ","النَّجاحُ"],answer:1,explain:"الإِفْراطُ يُؤَدِّي إِلَى تَضْيِيعِ الوَقْتِ"},
+{q:"القِراءَةُ.......... لِتُغَذِّيَ عَقْلَكَ.",options:["مُهِمَّةٌ","اِقْرَأْ","تُفِيدُ","وَسِيلَةٌ"],answer:1,explain:"فِعْلُ أَمْرٍ: اِقْرَأْ لِتُغَذِّيَ عَقْلَكَ"},
+{q:"إِنْ تُنْفِقْ وَقْتَ الفَراغِ لَكِنْ ذا الأَفْواهِ واسِعٌ. أَيْنَ فِعْلُ الشَّرْطِ؟",options:["تُنْفِقْ","تَتَّقِ","الفَراغِ","واسِعٌ"],answer:0,explain:"فِعْلُ الشَّرْطِ هُوَ «تُنْفِقْ»"},
+{q:"لا تُشاهِدِ القَمَرَ فِيها لَمْ يُفِدْ. نَوْعُ الأُسْلُوبِ:",options:["أَمْرٌ","نَهْيٌ","نَفْيٌ","اِسْتِفْهامٌ"],answer:1,explain:"«لا» النَّاهِيَةُ + مُضارِعٌ = نَهْيٌ"},
+{q:"النَّاجِحُونَ يَنْدُرُونَ وَيَفْهَمُ بِذَكاءٍ. المُقْتَرِنُ بِعَلامَةٍ فَرْعِيَّةٍ:",options:["النَّاجِحُونَ","يَنْدُرُونَ","يَفْهَمُ","بِذَكاءٍ"],answer:0,explain:"النَّاجِحُونَ: جَمْعُ مُذَكَّرٍ سالِمٌ مَرْفُوعٌ بِالواوِ"},
+{q:"إِنْ تُحْسِنُوا إِدارَةَ الوَقْتِ تُنْجِزُوا أَعْمالَكُمْ. فِعْلُ جَوابِ الشَّرْطِ:",options:["تُحْسِنُوا","إِدارَةَ","تُنْجِزُوا","أَعْمالَكُمْ"],answer:2,explain:"جَوابُ الشَّرْطِ: تُنْجِزُوا مَجْزُومٌ بِحَذْفِ النُّونِ"},
+{q:"مَنْ يَجْتَهِدْ يَنَلْ ذا مَكانَةٍ رَفِيعَةٍ. أَداةُ الشَّرْطِ:",options:["مَنْ","يَجْتَهِدْ","يَنَلْ","رَفِيعَةٍ"],answer:0,explain:"«مَنْ» أَداةُ شَرْطٍ جازِمَةٌ"},
+{q:"مَتَى تَبْنِ يَجِدِ الوَقْتُ لَكَ. حَوِّلِ لِمَجْزُومٍ: يَجِدُ →",options:["يَجِدُ","يَجِدْ","يَجِدَ","يَجِدِ"],answer:1,explain:"الفِعْلُ المَجْزُومُ: يَجِدْ بِالسُّكُونِ"},
+{q:"الَّذِي نَسْعَى إِلَى هَدَفٍ لا يُهْدِرُ الوَقْتَ. الفِعْلُ المَرْفُوعُ:",options:["نَسْعَى","هَدَفٍ","يُهْدِرُ","الوَقْتَ"],answer:0,explain:"نَسْعَى: مُضارِعٌ مَرْفُوعٌ بِضَمَّةٍ مُقَدَّرَةٍ"},
+{q:"يَنالُ الفَرْدُ مِنْ ثِمارِ إِجْهادِها. حَوِّلْ لِمَجْزُومٍ:",options:["يَنالُ","يَنَلْ","يَنالَ","يَنَلُ"],answer:1,explain:"يَنَلْ: مَجْزُومٌ بِالسُّكُونِ"},
+{q:"مَنْ يَنْهَضْ مِنَ الإِقْبالِ تَعِشْ راضِياً. فِعْلُ الشَّرْطِ:",options:["يَنْهَضْ","الإِقْبالِ","تَعِشْ","راضِياً"],answer:0,explain:"فِعْلُ الشَّرْطِ: يَنْهَضْ"},
+{q:"أَيْنَما تَذْهَبُوا تَجِدُوا خَيْراً. فِعْلُ الجَوابِ:",options:["أَيْنَما","تَذْهَبُوا","تَجِدُوا","خَيْراً"],answer:2,explain:"جَوابُ الشَّرْطِ: تَجِدُوا"},
+{q:"مَنْ يَتَرَدَّدْ يَتَأَخَّرْ. نَوْعُ الأُسْلُوبِ:",options:["شَرْطٌ","قَسَمٌ","اِسْتِفْهامٌ","تَعَجُّبٌ"],answer:0,explain:"أُسْلُوبُ شَرْطٍ"},
+{q:"....... تُؤَدِّ عَمَلَكَ تَتَراكَمُ عَلَيْكَ المَسْؤُولِيَّاتُ.",options:["إِنْ","مَتَى","أَيْنَما","لَمْ"],answer:3,explain:"لَمْ: أَداةُ جَزْمٍ وَنَفْيٍ"},
+{q:"....... يَحْرِصْ مِنْ لُصُوصِ الوَقْتِ يَسْتَفِدْ بِوَقْتِهِ كامِلاً.",options:["مَنْ","ما","مَهْما","مَتَى"],answer:0,explain:"مَنْ: لِلْعاقِلِ"},
+{q:"....... يَعْمَلْ بِجِدٍّ يُحَقِّقْ ما يُرِيدُ.",options:["مَنْ","لَوْ","لَوْلا","إِذا"],answer:0,explain:"مَنْ يَعْمَلْ بِجِدٍّ يُحَقِّقْ ما يُرِيدُ"},
+{q:"أَعْرِبْ: «أَيُّها الطُّلَّابُ» - أَيُّها:",options:["مُنادَى","مُبْتَدَأٌ","خَبَرٌ","فاعِلٌ"],answer:0,explain:"أَيُّها: مُنادَى مَبْنِيٌّ عَلَى الضَّمِّ"},
+{q:"اِسْتَخْرِجْ ضَمِيراً فِي مَحَلِّ نَصْبٍ:",options:["الهاءُ فِي أَوْقاتِها","أَنْتُمْ","هُوَ","نا فِي إِنَّنا"],answer:0,explain:"الهاءُ فِي أَوْقاتِها"},
+{q:"اِسْتَخْرِجْ ضَمِيراً مُسْتَتِراً:",options:["تَقْدِيرُهُ أَنْتَ فِي اِعْمَلْ","هُوَ","أَنْتُمْ","نا"],answer:0,explain:"اِعْمَلْ: الفاعِلُ مُسْتَتِرٌ تَقْدِيرُهُ أَنْتَ"},
+{q:"أَداةُ شَرْطٍ جازِمَةٌ فِي الفِقْرَةِ:",options:["إِذا","لَوْ","مَنْ","إِنْ"],answer:3,explain:"إِنْ: حَرْفُ شَرْطٍ جازِمٌ"},
+{q:"فِعْلاً مَبْنِيّاً لِلْمَجْهُولِ:",options:["يُسْتَغَلُّ","تَسْتَطِيعُ","اِسْتَفِدْ","يُحْسِنُ"],answer:0,explain:"يُسْتَغَلُّ: مَبْنِيٌّ لِلْمَجْهُولِ"},
+{q:"اِسْماً مَقْصُوراً:",options:["الفَراغُ","الأَعْمالُ","المُنَى","الوَقْتُ"],answer:2,explain:"المُنَى: اِسْمٌ مَقْصُورٌ"},
+{q:"أَعْرِبْ: «الوَقْتُ كَالسَّيْفِ» - الكافُ:",options:["حَرْفُ جَرٍّ","حَرْفُ تَشْبِيهٍ","اِسْمٌ","فِعْلٌ"],answer:0,explain:"الكافُ: حَرْفُ جَرٍّ وَتَشْبِيهٍ"},
+{q:"ضَمِيراً مُتَّصِلاً فِي مَحَلِّ جَرٍّ:",options:["الهاءُ فِي أَوْقاتِهِمْ","التَّاءُ فِي قُمْتُ","نا فِي كِتابِنا","كُلُّ ما سَبَقَ"],answer:3,explain:"كُلُّها ضَمائِرُ فِي مَحَلِّ جَرٍّ"},
+{q:"أَداةُ شَرْطٍ جازِمَةٌ:",options:["إِذا","مَنْ","لَوْ","لَوْلا"],answer:1,explain:"مَنْ: جازِمَةٌ"},
+{q:"حَوِّلْ لِشَرْطٍ جازِمٍ: «تَكُونُ مُقَضِّياً وَقْتَهُ نُصْبِحُ نادِماً»",options:["إِنْ تَقْضِ وَقْتَكَ تَنْدَمْ","إِذا قَضَيْتَ وَقْتَكَ نَدِمْتَ","لَوْ قَضَيْتَ وَقْتَكَ لَنَدِمْتَ","كُلَّما قَضَيْتَ وَقْتَكَ نَدِمْتَ"],answer:0,explain:"إِنْ تَقْضِ وَقْتَكَ تَنْدَمْ: شَرْطٌ جازِمٌ"},
+{q:"اِجْعَلْ «مُجْتَهِدٌ» لِلْمُثَنَّى: «إِلَيْكَ مُجْتَهِدٌ فِي عَمَلِكَ»",options:["إِلَيْكُما مُجْتَهِدانِ","إِلَيْكُمْ مُجْتَهِدُونَ","إِلَيْكِ مُجْتَهِدَةٌ","إِلَيْكُما مُجْتَهِدَيْنِ"],answer:0,explain:"إِلَيْكُما مُجْتَهِدانِ: مُثَنًّى مَرْفُوعٌ"},
+{q:"لَوْ قَرَأَ تَيْسِيراً نالَهُ. أَعِدْ كِتابَةَ الخَطِّ:",options:["لَوْ قَرَأَ تَيْسِيراً لَنالَهُ","لَوْ قَرَأَ تَيْسِيراً نالَهُ","إِنْ قَرَأَ تَيْسِيراً يَنَلْهُ","مَتَى قَرَأَ تَيْسِيراً يَنالُهُ"],answer:0,explain:"لَوْ لِلتَّمَنِّي، وَالجَوابُ يَقْتَرِنُ بِاللَّامِ: لَنالَهُ"}
+];
+
+let currentQ=0,studentAnswers=new Array(30).fill(null),postponedQuestions=new Set(),studentName="",studentId="",examDuration=30,timeLeft=0,timerInterval=null,startTime=null,idleTimer=null,lastActivityTime=Date.now();
+
+function generateId(){return 'student_'+Date.now()+'_'+Math.random().toString(36).substr(2,9)}
+
+async function getStudents(){const snap=await db.ref('students').once('value');return snap.val()||{}}
+async function saveStudent(id,data){await db.ref('students/'+id).set(data)}
+async function getBlockedStudents(){const snap=await db.ref('blockedStudents').once('value');return snap.val()||{}}
+async function saveBlockedStudent(id,name){await db.ref('blockedStudents/'+id).set(name)}
+async function removeBlockedStudent(id){await db.ref('blockedStudents/'+id).remove()}
+async function getIdleStudents(){const snap=await db.ref('idleStudents').once('value');return snap.val()||{}}
+async function saveIdleStudent(id,name){await db.ref('idleStudents/'+id).set(name)}
+async function removeIdleStudent(id){await db.ref('idleStudents/'+id).remove()}
+async function getReentryRequests(){const snap=await db.ref('reentryRequests').once('value');return snap.val()||{}}
+async function saveReentryRequest(id,data){await db.ref('reentryRequests/'+id).set(data)}
+async function removeReentryRequest(id){await db.ref('reentryRequests/'+id).remove()}
+async function getAllowedStudents(){const snap=await db.ref('allowedStudents').once('value');return snap.val()||{}}
+async function saveAllowedStudent(id,name){await db.ref('allowedStudents/'+id).set(name)}
+async function removeAllowedStudent(id){await db.ref('allowedStudents/'+id).remove()}
+async function getSettings(){const snap=await db.ref('settings').once('value');return snap.val()||{examDuration:30,idleTimeout:300}}
+async function saveSettingsDB(data){await db.ref('settings').set(data)}
+async function isStudentBlocked(name){const blocked=await getBlockedStudents();const idle=await getIdleStudents();return Object.values(blocked).includes(name)||Object.values(idle).includes(name)}
+async function hasCompletedBefore(name){const students=await getStudents();return Object.values(students).some(s=>s.name===name&&s.status==='completed')}
+async function getStudentByName(name){const students=await getStudents();for(let id in students){if(students[id].name===name)return {id,data:students[id]}}return null}
+
+function showTeacherLogin(){document.getElementById('passwordModal').classList.remove('hidden');document.getElementById('teacherPassword').value='';document.getElementById('teacherPassword').focus()}
+function closePasswordModal(){document.getElementById('passwordModal').classList.add('hidden')}
+async function checkTeacherPassword(){
+const pass=document.getElementById('teacherPassword').value;
+if(pass==="14252"){
+closePasswordModal();
+document.getElementById('loginScreen').classList.add('hidden');
+document.getElementById('teacherSetupScreen').classList.remove('hidden');
+const settings=await getSettings();
+document.getElementById('examDuration').value=settings.examDuration||30;
+document.getElementById('idleTimeout').value=settings.idleTimeout||300;
+const requests=await getReentryRequests();
+const reqCount=Object.keys(requests).length;
+document.getElementById('requestBadge').innerHTML=reqCount>0?`<span class="notification-badge">${reqCount}</span>`:'';
+}else{
+alert("كَلِمَةُ المُرُورِ خاطِئَةٌ");
+document.getElementById('teacherPassword').value='';
+}
+}
+
+async function saveSettings(){
+examDuration=parseInt(document.getElementById('examDuration').value);
+const idleTimeout=parseInt(document.getElementById('idleTimeout').value);
+await saveSettingsDB({examDuration,idleTimeout});
+alert("✅ تَمَّ حِفْظُ الإِعْداداتِ");
+backToLogin();
+}
+function backToLogin(){document.getElementById('teacherScreen').classList.add('hidden');document.getElementById('teacherSetupScreen').classList.add('hidden');document.getElementById('loginScreen').classList.remove('hidden')}
+
+async function startQuiz(){
+studentName=document.getElementById('studentName').value.trim();
+if(!studentName){alert('⚠️ اُكْتُبِ اسْمَكَ أَوَّلاً');return}
+
+studentId=generateId();
+const settings=await getSettings();
+examDuration=settings.examDuration||30;
+
+const allowed=await getAllowedStudents();
+if(Object.values(allowed).includes(studentName)){
+const blocked=await getBlockedStudents();const idle=await getIdleStudents();
+for(let id in blocked){if(blocked[id]===studentName)await removeBlockedStudent(id)}
+for(let id in idle){if(idle[id]===studentName)await removeIdleStudent(id)}
+for(let id in allowed){if(allowed[id]===studentName)await removeAllowedStudent(id)}
+alert('✅ تم السماح لك بإعادة الاختبار لمرة واحدة فقط');
+}else{
+if(await isStudentBlocked(studentName)){
+const requests=await getReentryRequests();
+const blocked=await getBlockedStudents();const idle=await getIdleStudents();
+const reason=Object.values(blocked).includes(studentName)?'محظور':'خامل - طرد تلقائي';
+if(!Object.values(requests).some(r=>r.name===studentName)){
+await saveReentryRequest(studentId,{name:studentName,reason,date:new Date().toLocaleString('ar-EG')});
+}
+document.getElementById('blockAlert').innerHTML='⚠️ <strong>أنت محظور من الاختبار.</strong><br>تم إرسال طلب للمعلم. انتظر الموافقة.';
+document.getElementById('blockAlert').classList.remove('hidden');
+return;
+}
+}
+
+if(await hasCompletedBefore(studentName)){
+alert('⚠️ لَقَدْ أَجْرَيْتَ الاِخْتِبارَ مِنْ قَبْلُ. لا يُمْكِنُ الدُّخُولُ مَرَّةً أُخْرَى.');
+return;
+}
+
+await saveStudent(studentId,{name:studentName,status:'started',date:new Date().toLocaleString('ar-EG'),answers:new Array(30).fill(null),score:0,percent:0,grade:'—',timeTaken:0,online:true,lastActive:Date.now()});
+
+currentQ=0;studentAnswers=new Array(30).fill(null);postponedQuestions=new Set();
+timeLeft=examDuration*60;startTime=Date.now();
+document.getElementById('resumeAlert').classList.add('hidden');
+
+document.getElementById('blockAlert').classList.add('hidden');
+document.getElementById('loginScreen').classList.add('hidden');document.getElementById('quizScreen').classList.remove('hidden');
+document.getElementById('currentStudent').textContent=studentName;createQuestionNav();showQuestion();if(examDuration>0)startTimer();
+startIdleTimer();
+setInterval(()=>{db.ref('students/'+studentId+'/lastActive').set(Date.now())},5000);
+}
+
+async function saveProgress(){
+await db.ref('students/'+studentId).update({currentQ:currentQ,answers:studentAnswers,postponed:Array.from(postponedQuestions),timeLeft:timeLeft,lastActive:Date.now()});
+}
+
+function createQuestionNav(){let html='';for(let i=0;i<30;i++){html+=`<button class="q-nav-btn" id="nav${i}" onclick="jumpToQuestion(${i})">${i+1}</button>`}document.getElementById('questionNav').innerHTML=html;updateNavButtons()}
+function updateNavButtons(){for(let i=0;i<30;i++){const btn=document.getElementById(`nav${i}`);btn.className='q-nav-btn';if(i===currentQ)btn.classList.add('current');else if(studentAnswers[i]!==null)btn.classList.add('answered');else if(postponedQuestions.has(i))btn.classList.add('postponed')}}
+function startTimer(){updateTimerDisplay();timerInterval=setInterval(()=>{timeLeft--;updateTimerDisplay();saveProgress();if(timeLeft<=0){clearInterval(timerInterval);alert("⏰ اِنْتَهَى الوَقْتُ!");finishQuiz()}},1000)}
+function updateTimerDisplay(){const mins=Math.floor(timeLeft/60);const secs=timeLeft%60;const display=document.getElementById('timerDisplay');display.textContent=`⏱️ ${mins}:${secs.toString().padStart(2,'0')}`;if(timeLeft<300)display.classList.add('warning')}
+
+function resetIdleTimer(){lastActivityTime=Date.now()}
+async function startIdleTimer(){
+const settings=await getSettings();
+const idleTimeout=settings.idleTimeout||300;
+if(idleTimeout===0)return;
+clearInterval(idleTimer);
+idleTimer=setInterval(async ()=>{
+const elapsed=Math.floor((Date.now()-lastActivityTime)/1000);
+if(elapsed>=idleTimeout){
+clearInterval(idleTimer);clearInterval(timerInterval);
+await saveIdleStudent(studentId,studentName);
+alert(`⚠️ تَمَّ إِخْراجُكَ مِنَ الاِخْتِبارِ لِعَدَمِ النَّشاطِ مُدَّةَ ${idleTimeout} ثانِيَةً.\nلا يُمْكِنُكَ المُتابَعَةُ إِلَّا بَعْدَ مُوافَقَةِ المُعَلِّمِ.`);
+location.reload();
+}
+},1000);
+}
+
+function showQuestion(){resetIdleTimer();const q=questions[currentQ];let html=`<div class="question-box"><div class="question-text">السُّؤالُ ${currentQ+1} مِنْ 30: ${q.q}</div>`;q.options.forEach((opt,i)=>{const selected=studentAnswers[currentQ]===i?'selected':'';html+=`<div class="option ${selected}" onclick="selectOption(${i})">${opt}</div>`});html+=`</div>`;document.getElementById('questionContainer').innerHTML=html;document.getElementById('progressBar').style.width=((currentQ+1)/30*100)+'%';document.getElementById('nextBtn').disabled=studentAnswers[currentQ]===null;document.getElementById('prevBtn').disabled=currentQ===0;updateNavButtons()}
+function selectOption(index){resetIdleTimer();document.querySelectorAll('.option').forEach(o=>o.classList.remove('selected'));document.querySelectorAll('.option')[index].classList.add('selected');studentAnswers[currentQ]=index;postponedQuestions.delete(currentQ);document.getElementById('nextBtn').disabled=false;updateNavButtons();saveProgress()}
+function postponeQuestion(){resetIdleTimer();postponedQuestions.add(currentQ);if(currentQ<29)nextQuestion();updateNavButtons();saveProgress()}
+function nextQuestion(){resetIdleTimer();if(currentQ<29){currentQ++;showQuestion()}}
+function prevQuestion(){resetIdleTimer();if(currentQ>0){currentQ--;showQuestion()}}
+function jumpToQuestion(index){resetIdleTimer();currentQ=index;showQuestion()}
+
+function finishQuizEarly(){
+resetIdleTimer();
+const unanswered=studentAnswers.filter(a=>a===null).length;
+const mins=Math.floor(timeLeft/60);const secs=timeLeft%60;
+const timeStr=`${mins}:${secs.toString().padStart(2,'0')}`;
+const msg=`⚠️ هَلْ أَنْتَ مُتَأَكِّدٌ مِنْ إِنْهاءِ الاِخْتِبارِ؟\n\n📝 الأَسْئِلَةُ المُتَبَقِّيَةُ: ${unanswered} سُؤَال\n⏱️ الوَقْتُ المُتَبَقِّي: ${timeStr}\n\nلَنْ تَتَمَكَّنَ مِنَ العَوْدَةِ بَعْدَ الإِنْهاءِ!`;
+if(confirm(msg))finishQuiz()
+}
+async function finishQuiz(){
+clearInterval(timerInterval);clearInterval(idleTimer);
+const timeTaken=Math.round((Date.now()-startTime)/1000/60);let score=0;studentAnswers.forEach((ans,i)=>{if(ans===questions[i].answer)score++});const percent=Math.round(score/30*100);let grade,motivation;if(percent>=90){grade='مُمْتازٌ 🌟';motivation='أَحْسَنْتَ! أَنْتَ نَجْمٌ فِي النَّحْوِ العَرَبِيِّ. اِسْتَمِرَّ فِي هَذا التَّمَيُّزِ!'}else if(percent>=80){grade='جَيِّدٌ جِدّاً ⭐';motivation='أَداءٌ رائِعٌ! لَدَيْكَ فَهْمٌ مُمْتازٌ لِلْقَواعِدِ. واصِلِ التَّقَدُّمَ!'}else if(percent>=70){grade='جَيِّدٌ 👍';motivation='جَيِّدٌ! أَنْتَ عَلَى الطَّرِيقِ الصَّحِيحِ. راجِعْ بَعْضَ القَواعِدِ وَسَتُصْبِحُ أَفْضَلَ!'}else if(percent>=60){grade='مَقْبُولٌ 💪';motivation='بِدايَةٌ طَيِّبَةٌ! بِالمُمارَسَةِ سَتُحَقِّقُ نَتائِجَ أَفْضَلَ. لا تَسْتَسْلِمْ!'}else{grade='يَحْتاجُ تَحْسِيناً 📚';motivation='لا بَأْسَ! الفَشَلُ أَوَّلُ خُطُواتِ النَّجاحِ. راجِعِ الدُّرُوسَ وَحاوِلْ مَرَّةً أُخْرَى!'}
+
+await db.ref('students/'+studentId).update({name:studentName,score:score,percent:percent,grade:grade,date:new Date().toLocaleString('ar-EG'),timeTaken:timeTaken,answers:studentAnswers,status:'completed',online:false});
+
+let certificate=`<div class="certificate"><h2>🎓 شَهادَةُ تَقْدِيرٍ 🎓</h2><p>تَشْهَدُ إِدارَةُ الاِخْتِبارِ بِأَنَّ الطَّالِبَ/ةَ</p><h3>${studentName}</h3><p>قَدْ أَتَمَّ بِنَجاحٍ اخْتِبارَ القَواعِدِ النَّحْوِيَّةِ</p><div class="score">${score} / 30</div><p style="font-size:24px;">النِّسْبَةُ المِئَوِيَّةُ: ${percent}%</p><p style="font-size:24px;">التَّقْدِيرُ: ${grade}</p><div class="motivation">💡 ${motivation}</div><p style="margin-top:30px;font-size:16px;">تارِيخُ الاِخْتِبارِ: ${new Date().toLocaleDateString('ar-EG')}</p></div>`;
+let report=`<h2 style="text-align:center;margin:30px 0;">📋 التَّقْرِيرُ التَّفْصِيلِيُّ</h2><table class="report-table"><tr><th>رَقَمٌ</th><th>السُّؤَالُ</th><th>إِجابَتُكَ</th><th>الصَّحِيحَةُ</th><th>النَّتِيجَةُ</th><th>الشَّرْحُ</th></tr>`;questions.forEach((q,i)=>{const studentAns=studentAnswers[i];const isCorrect=studentAns===q.answer;const ansText=studentAns!==null?q.options[studentAns]:'لَمْ يُجِبْ';report+=`<tr><td>${i+1}</td><td>${q.q}</td><td>${ansText}</td><td>${q.options[q.answer]}</td><td class="${isCorrect?'correct':'wrong'}">${isCorrect?'✓ صَحِيحَةٌ':'✗ خَطَأٌ'}</td><td style="font-size:14px;">${q.explain}</td></tr>`});report+=`</table>`;
+document.getElementById('quizScreen').classList.add('hidden');document.getElementById('resultScreen').classList.remove('hidden');document.getElementById('certificateContainer').innerHTML=certificate;document.getElementById('finalReport').innerHTML=report;}
+
+async function showTeacherView(){
+document.getElementById('teacherSetupScreen').classList.add('hidden');document.getElementById('teacherScreen').classList.remove('hidden');
+db.ref('students').on('value',async ()=>{
+const students=await getStudents();const blocked=await getBlockedStudents();const idle=await getIdleStudents();const requests=await getReentryRequests();
+updateStats(students);
+
+let html='';
+if(Object.keys(requests).length>0){
+html+=`<div class="alert alert-danger"><h3 style="font-size:24px;margin-bottom:15px;">🔔 طَلَباتُ إِعادَةِ الدُّخُولِ (${Object.keys(requests).length})</h3>`;
+for(let id in requests){
+const req=requests[id];
+html+=`<div style="background:#fff;padding:15px;border-radius:10px;margin:10px 0;display:flex;justify-content:space-between;align-items:center;">
+<span style="font-size:20px;"><strong>${req.name}</strong> - ${req.reason} - ${req.date}</span>
+<div>
+<button class="btn btn-sm btn-success" onclick="approveReentry('${id}')">✅ سماح</button>
+<button class="btn btn-sm btn-danger" onclick="rejectReentry('${id}')">❌ رفض</button>
+</div></div>`;
+}
+html+=`</div>`;
+}
+
+html+=`<table class="report-table"><tr><th class="checkbox-cell">☐</th><th>م</th><th>اِسْمُ الطَّالِبِ</th><th>الدَّرَجَةُ</th><th>النِّسْبَةُ</th><th>التَّقْدِيرُ</th><th>الحالَةُ</th><th>الإِجْراءُ</th></tr>`;
+let idx=1;
+for(let id in students){
+const s=students[id];
+const isBlocked=Object.values(blocked).includes(s.name);const isIdle=Object.values(idle).includes(s.name);const isCompleted=s.status==='completed';const isOnline=s.online&&Date.now()-s.lastActive<15000;
+let statusClass='badge-active',statusText='✓ بدأ';
+if(isBlocked){statusClass='badge-blocked';statusText='🔒 محظور'}
+else if(isIdle){statusClass='badge-idle';statusText='⏸️ خامل'}
+else if(isCompleted){statusClass='badge-active';statusText='✅ أنهى'}
+else if(isOnline){statusClass='badge-online';statusText='🟢 متصل الآن'}
+html+=`<tr>
+<td class="checkbox-cell"><input type="checkbox" class="student-check" data-id="${id}" data-name="${s.name}"></td>
+<td>${idx++}</td>
+<td>${s.name}</td>
+<td>${isCompleted?s.score+'/30':'—'}</td>
+<td>${isCompleted?s.percent+'%':'—'}</td>
+<td>${isCompleted?s.grade:'—'}</td>
+<td><span class="badge ${statusClass}">${statusText}</span></td>
+<td>
+<button class="btn btn-sm" onclick="viewStudentDetail('${id}')">عرض</button>
+<button class="btn btn-sm ${isBlocked||isIdle?'btn-success':'btn-warning'}" onclick="toggleBlock('${id}','${s.name}')">${isBlocked||isIdle?'إلغاء الحظر':'حظر'}</button>
+<button class="btn btn-sm btn-success" onclick="toggleRetakePermission('${id}','${s.name}')">السماح بالإعادة</button>
+</td>
+</tr>`;
+}
+html+=`</table>`;
+if(Object.keys(students).length===0)html='<p style="text-align:center;color:#64748b;font-size:21px;">لا تُوجَدُ نَتائِجُ بَعْدُ - في انتظار دخول الطلاب...</p>';
+document.getElementById('allReports').innerHTML=html;
+});
+}
+
+function updateStats(students){
+const total=Object.keys(students).length;
+const completed=Object.values(students).filter(s=>s.status==='completed').length;
+const online=Object.values(students).filter(s=>s.online&&Date.now()-s.lastActive<15000).length;
+const avgScore=completed>0?Math.round(Object.values(students).filter(s=>s.status==='completed').reduce((sum,s)=>sum+s.percent,0)/completed):0;
+document.getElementById('statsGrid').innerHTML=`
+<div class="stat-card"><h3>${total}</h3><p>إجمالي الطلاب</p></div>
+<div class="stat-card"><h3>${online}</h3><p>متصل الآن</p></div>
+<div class="stat-card"><h3>${completed}</h3><p>أنهوا الاختبار</p></div>
+<div class="stat-card"><h3>${avgScore}%</h3><p>متوسط الدرجات</p></div>`;
+}
+
+async function toggleRetakePermission(id,name){
+// حذف الطالب من السجل عشان يدخل من جديد
+await db.ref('students/'+id).remove();
+await saveAllowedStudent(id,name);
+let blocked=await getBlockedStudents();let idle=await getIdleStudents();
+for(let bid in blocked){if(blocked[bid]===name)await removeBlockedStudent(bid)}
+for(let iid in idle){if(idle[iid]===name)await removeIdleStudent(iid)}
+alert(`✅ تم السماح للطالب ${name} بإعادة الاختبار.\nتم حذف سجله القديم ويمكنه الدخول الآن من جديد.`);
+}
+
+async function approveReentry(id){
+const requests=await getReentryRequests();
+const req=requests[id];
+// حذف الطالب من السجل عشان يدخل من جديد
+const students=await getStudents();
+for(let sid in students){if(students[sid].name===req.name){await db.ref('students/'+sid).remove()}}
+await saveAllowedStudent(id,req.name);
+await removeReentryRequest(id);
+alert(`✅ تم السماح للطالب ${req.name} بإعادة الاختبار.\nتم حذف سجله القديم ويمكنه الدخول الآن.`);
+}
+
+async function rejectReentry(id){
+await removeReentryRequest(id);
+alert(`❌ تم رفض الطلب`);
+}
+
+async function toggleBlock(id,name){
+const blocked=await getBlockedStudents();const idle=await getIdleStudents();
+const isBlocked=Object.values(blocked).includes(name);const isIdle=Object.values(idle).includes(name);
+if(isBlocked||isIdle){
+for(let bid in blocked){if(blocked[bid]===name)await removeBlockedStudent(bid)}
+for(let iid in idle){if(idle[iid]===name)await removeIdleStudent(iid)}
+alert(`✅ تم إلغاء حظر الطالب: ${name}`);
+}else{
+if(confirm(`⚠️ هل تريد حظر الطالب ${name} من دخول الاختبار؟`)){
+await saveBlockedStudent(id,name);
+alert(`🔒 تم حظر الطالب: ${name}`);
+}}
+}
+
+async function deleteSelected(){
+const checkboxes=document.querySelectorAll('.student-check:checked');
+if(checkboxes.length===0){alert('⚠️ اختر طالب واحد على الأقل للحذف');return}
+if(!confirm(`⚠️ متأكد من حذف ${checkboxes.length} تقرير؟ لا يمكن التراجع!`))return;
+for(let cb of checkboxes){await db.ref('students/'+cb.dataset.id).remove()}
+alert(`✅ تم حذف ${checkboxes.length} تقرير بنجاح`);
+}
+
+async function unblockSelected(){
+const checkboxes=document.querySelectorAll('.student-check:checked');
+if(checkboxes.length===0){alert('⚠️ اختر طالب واحد على الأقل');return}
+const blocked=await getBlockedStudents();const idle=await getIdleStudents();let count=0;
+for(let cb of checkboxes){
+const name=cb.dataset.name;
+for(let id in blocked){if(blocked[id]===name){await removeBlockedStudent(id);count++}}
+for(let id in idle){if(idle[id]===name){await removeIdleStudent(id);count++}}
+}
+alert(`✅ تم إلغاء حظر ${count} طالب`);
+}
+
+function selectAll(){document.querySelectorAll('.student-check').forEach(cb=>cb.checked=true)}
+function deselectAll(){document.querySelectorAll('.student-check').forEach(cb=>cb.checked=false)}
+
+async function viewStudentDetail(id){
+const students=await getStudents();const student=students[id];
+const blocked=await getBlockedStudents();const idle=await getIdleStudents();
+const isBlocked=Object.values(blocked).includes(student.name)||Object.values(idle).includes(student.name);
+const isCompleted=student.status==='completed';
+let html=`<div style="background:#f1f5f9;padding:25px;border-radius:15px;margin-bottom:25px;"><h3>📊 مُلَخَّصُ النَّتِيجَةِ</h3><p><strong>الاِسْمُ:</strong> ${student.name}</p>`;
+if(isCompleted){html+=`<p><strong>الدَّرَجَةُ:</strong> ${student.score} مِنْ 30 (${student.percent}%)</p><p><strong>التَّقْدِيرُ:</strong> ${student.grade}</p><p><strong>الوَقْتُ المُسْتَغْرَقُ:</strong> ${student.timeTaken} دَقِيقَةً</p>`}else{html+=`<p><strong>الحالَةُ:</strong> بدأ الاختبار ولم يكمله</p>`}
+html+=`<p><strong>التَّارِيخُ:</strong> ${student.date}</p><p><strong>الحالَةُ:</strong> <span class="badge ${isBlocked?'badge-blocked':'badge-active'}">${isBlocked?'🔒 محظور':'✓ نشط'}</span></p></div>`;
+if(isCompleted){html+=`<h3>📝 تَفاصِيلُ الإِجاباتِ</h3><table class="report-table"><tr><th>السُّؤَالُ</th><th>إِجابَةُ الطَّالِبِ</th><th>الصَّحِيحَةُ</th><th>النَّتِيجَةُ</th></tr>`;questions.forEach((q,i)=>{const studentAns=student.answers[i];const isCorrect=studentAns===q.answer;const ansText=studentAns!==null?q.options[studentAns]:'لَمْ يُجِبْ';html+=`<tr><td>${i+1}. ${q.q}</td><td>${ansText}</td><td>${q.options[q.answer]}</td><td class="${isCorrect?'correct':'wrong'}">${isCorrect?'✓':'✗'}</td></tr>`});html+=`</table>`}else{html+=`<div class="alert">⚠️ الطالب لم يكمل الاختبار بعد</div>`}
+document.getElementById('teacherScreen').classList.add('hidden');document.getElementById('studentDetailScreen').classList.remove('hidden');document.getElementById('detailStudentName').textContent=`تَقْرِيرُ الطَّالِبِ: ${student.name}`;document.getElementById('studentDetailReport').innerHTML=html;}
+
+function backToTeacher(){document.getElementById('studentDetailScreen').classList.add('hidden');document.getElementById('teacherScreen').classList.remove('hidden');}
+async function clearAllData(){if(confirm('⚠️ مُتَأَكِّدٌ مِنْ مَسْحِ كُلِّ بَياناتِ الطُّلَّابِ؟ لا يُمْكِنُ التَّراجُعُ!')){await db.ref().remove();alert('✅ تَمَّ مَسْحُ جَمِيعِ البَياناتِ');}}
+async function exportToExcel(){
+const students=await getStudents();if(Object.keys(students).length===0){alert('لا تُوجَدُ بَياناتٌ لِلتَّصْدِيرِ');return;}
+const blocked=await getBlockedStudents();const idle=await getIdleStudents();
+let csv='الاِسْمُ,الدَّرَجَةُ,النِّسْبَةُ,التَّقْدِيرُ,الوَقْتُ,التَّارِيخُ,الحالَةُ\n';
+for(let id in students){
+const s=students[id];
+let status='نشط';if(Object.values(blocked).includes(s.name))status='محظور';else if(Object.values(idle).includes(s.name))status='خامل';else if(s.status!=='completed')status='لم يكمل';
+const score=s.status==='completed'?`${s.score}/30`:'—';const percent=s.status==='completed'?`${s.percent}%`:'—';const grade=s.status==='completed'?s.grade:'—';const time=s.status==='completed'?`${s.timeTaken} دَقِيقَةً`:'—';
+csv+=`${s.name},${score},${percent},${grade},${time},${s.date},${status}\n`;
+}
+const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=`نَتائِجُ_الاِخْتِبارِ_${new Date().toLocaleDateString('ar-EG')}.csv`;link.click();
+}
+function refreshData(){showTeacherView()}
+
+window.addEventListener('beforeunload',function(e){if(!document.getElementById('quizScreen').classList.contains('hidden')){saveProgress();db.ref('students/'+studentId+'/online').set(false);e.preventDefault();e.returnValue='';}});
+</script>
+</body>
+</html>
